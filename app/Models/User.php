@@ -43,6 +43,6 @@ class User extends Authenticatable
     ];
 
     public function favoriteFunds() {
-        return $this->belongsToMany('App\Models\Fund', 'user_funds');
+        return $this->belongsToMany('App\Models\Fund', 'user_funds')->withTimestamps();
     }
 }

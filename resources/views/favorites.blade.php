@@ -19,7 +19,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($favorites as $favorite)
+                @foreach (Auth::user()->favoriteFunds as $favorite)
                     <tr>
                         <td>{{ $favorite->id }}</td>
                         <td>{{ $favorite->name }}</td>
@@ -37,6 +37,12 @@
                         <td><a href="{{ route('downloadXml', ['id'=>$favorite->id]) }}">Download</a></td>
                     </tr>
                 @endforeach
+                @if(session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
             </tbody>
         </table>
     </div>

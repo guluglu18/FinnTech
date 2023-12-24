@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Fund;
 use App\Models\FundCategory;
+use App\Models\UserFund;
 use Barryvdh\DomPDF\PDF;
 use Dompdf\Dompdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Maatwebsite\Excel\Excel as ExcelExcel;
@@ -69,9 +71,8 @@ class HomeController extends Controller
 
     public function favorites() {
 
-        $favorites = collect(session()->get('favorites', []))->unique('id')->values();
+        $favorites = auth()->user()->favoriteFunds;
         //dd($favorites);
-
         return view('favorites', compact('favorites'));
 
     }
@@ -80,28 +81,44 @@ class HomeController extends Controller
     {
         $fund = Fund::find($id);
 
-        if (!$request->session()->has('favorites')) {
-            $request->session()->put('favorites', []);
-        }
-        $favorites = $request->session()->get('favorites');
-        $favorites[] = $fund;
-        $request->session()->put('favorites', $favorites);
+        //provera da li je fond sa tim ID-jem vec dodat
+        $existingUserFund = UserFund::where('user_id', Auth::user()->id)
+            ->where('fund_id', $fund->id)
+            ->first();
 
-        return redirect()->back();
+        
+        
+        if (Auth::check() && $fund && !$existingUserFund) {
+            $userFund = new UserFund([
+                'user_id' => Auth::id(), // Korisnik koji dodaje fond
+                'fund_id' => $fund->id, // Fond koji se dodaje
+            ]);
+    
+            $userFund->save();
+        }
+    
+    
+        return redirect()->back()->with('success', 'Fund added to favorites');;
     }
 
 
     public function remove(Request $request, $id) {
         $fund = Fund::find($id);
 
-        $favorites = $request->session()->get('favorites', []);
-        
-        $updatedFavorites = array_filter($favorites, function ($favorites) use ($id){
-            return $favorites['id'] != $id;
-        });
-        session()->put('favorites', $updatedFavorites);
-
-        return redirect()->back();
+        if (Auth::check()) {
+            $user = Auth::user();
+            
+            // Pronađi UserFund model koji odgovara korisniku i fondu
+            $userFund = UserFund::where('user_id', $user->id)
+                ->where('fund_id', $id)
+                ->first();
+            
+            // Ako smo pronašli UserFund model, obriši ga
+            if ($userFund) {
+                $userFund->delete();
+            }
+        }
+        return redirect()->back()->with('success', 'Fund removed');
 
     }
 
